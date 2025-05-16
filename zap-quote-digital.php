@@ -74,6 +74,11 @@ function quote_details_callback($post) {
 
 // Save Meta Box
 add_action('save_post_quote', function ($post_id) {
+    if (!get_post_meta($post_id, '_quote_token', true)) {
+    $token = wp_generate_password(20, false);
+    update_post_meta($post_id, '_quote_token', $token);
+}
+
     if (isset($_POST['quote_status'])) {
     update_post_meta($post_id, '_quote_status', sanitize_text_field($_POST['quote_status']));
 }
@@ -101,6 +106,18 @@ add_action('save_post_quote', function ($post_id) {
 
    $template = get_option('quote_email_template', '');
 $logo = get_option('quote_logo_url', '');
+$quote_token = get_post_meta($post_id, '_quote_token', true);
+$accept_url = add_query_arg([
+    'quote_id' => $post_id,
+    'action' => 'accept',
+    'token' => $quote_token
+], home_url('/quote-response/'));
+
+$reject_url = add_query_arg([
+    'quote_id' => $post_id,
+    'action' => 'reject',
+    'token' => $quote_token
+], home_url('/quote-response/'));
 
 $quote_table = '<table width="100%" style="border-collapse: collapse;"><thead><tr><th align="left">Item</th><th align="right">Cost</th></tr></thead><tbody>';
 $total = 0;
@@ -115,6 +132,11 @@ $quote_table .= "<tr><td><strong>Total</strong></td><td style='text-align:right;
 $body = $template;
 $body = str_replace('{{client_name}}', $client_name, $body);
 $body = str_replace('{{quote_table}}', $quote_table, $body);
+$body .= "<p>
+    <a href='{$accept_url}' style='background:#4CAF50;color:white;padding:10px 15px;text-decoration:none;border-radius:4px;'>Accept Quote</a>
+    &nbsp;
+    <a href='{$reject_url}' style='background:#f44336;color:white;padding:10px 15px;text-decoration:none;border-radius:4px;'>Reject Quote</a>
+</p>";
 
 if ($logo) {
     $body = "<p><img src='{$logo}' style='max-width:200px;' /></p>" . $body;
@@ -206,3 +228,49 @@ function render_quote_settings_page() {
     </div>
     <?php
 }
+
+add_action('init', function () {
+    add_rewrite_rule('^quote-response/?$', 'index.php?quote_response=1', 'top');
+    add_rewrite_tag('%quote_response%', '1');
+});
+
+add_filter('query_vars', function ($vars) {
+    $vars[] = 'quote_response';
+    return $vars;
+});
+
+add_action('template_redirect', function () {
+    if (get_query_var('quote_response')) {
+        $quote_id = absint($_GET['quote_id'] ?? 0);
+        $action = $_GET['action'] ?? '';
+        $token = $_GET['token'] ?? '';
+
+        $valid_actions = ['accept', 'reject'];
+
+        if (!$quote_id || !in_array($action, $valid_actions)) {
+            wp_die('Invalid request.');
+        }
+
+        $stored_token = get_post_meta($quote_id, '_quote_token', true);
+        if (!$stored_token || $stored_token !== $token) {
+            wp_die('Invalid or expired token.');
+        }
+
+        $new_status = $action === 'accept' ? 'accepted' : 'rejected';
+        update_post_meta($quote_id, '_quote_status', $new_status);
+
+        // Optional: notify admin
+        $admin_email = get_option('admin_email');
+        $client_name = get_post_meta($quote_id, '_client_name', true);
+        wp_mail($admin_email, "Quote {$new_status}", "Client {$client_name} has {$new_status} the quote #{$quote_id}.");
+
+        // Output message
+        wp_head(); // to load styles
+        echo "<div style='max-width:600px;margin:50px auto;font-family:sans-serif;text-align:center;'>
+            <h2>Thank you!</h2>
+            <p>You have successfully <strong>{$new_status}</strong> the quote.</p>
+        </div>";
+        wp_footer();
+        exit;
+    }
+});
