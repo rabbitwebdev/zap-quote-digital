@@ -36,6 +36,12 @@ function quote_details_callback($post) {
     $client_email = get_post_meta($post->ID, '_client_email', true);
     $items = get_post_meta($post->ID, '_quote_items', true) ?: [];
     $status = get_post_meta($post->ID, '_quote_status', true) ?: 'draft';
+      // Calculate total
+    $total = 0;
+    foreach ($items as $item) {
+        $total += floatval($item['cost'] ?? 0);
+    }
+    
 ?>
 <p><label>Status: 
     <select name="quote_status">
@@ -56,6 +62,7 @@ function quote_details_callback($post) {
         <?php endforeach; ?>
         <p><button type="button" onclick="addQuoteItem()">Add Item</button></p>
     </div>
+     <p><strong>Total Cost: £<?= number_format($total, 2) ?></strong></p>
     <p><button type="submit" name="send_quote" class="button button-primary">Send Quote</button></p>
 
     <script>
