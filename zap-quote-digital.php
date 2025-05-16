@@ -270,6 +270,7 @@ add_action('template_redirect', function () {
             <h2>Thank you {$client_name} !</h2>
             <p>You have successfully <strong>{$new_status}</strong> the quote.</p>
         </div>";
+        echo do_shortcode( ' [stripe_subscription_button] ' );
         wp_footer();
         exit;
     }
