@@ -267,7 +267,7 @@ add_action('template_redirect', function () {
         // Output message
         wp_head(); // to load styles
         echo "<div style='max-width:600px;margin:50px auto;font-family:sans-serif;text-align:center;'>
-            <h2>Thank you!</h2>
+            <h2>Thank you {$client_name} !</h2>
             <p>You have successfully <strong>{$new_status}</strong> the quote.</p>
         </div>";
         wp_footer();
