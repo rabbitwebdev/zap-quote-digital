@@ -99,28 +99,26 @@ add_action('save_post_quote', function ($post_id) {
     $client_name = get_post_meta($post_id, '_client_name', true);
     $items = get_post_meta($post_id, '_quote_items', true);
 
-    $total = 0;
+   $template = get_option('quote_email_template', '');
+$logo = get_option('quote_logo_url', '');
 
-    // HTML Email
-    $items_table = '';
-    foreach ($items as $item) {
-        $items_table .= "<tr><td>{$item['desc']}</td><td style='text-align:right;'>£" . number_format($item['cost'], 2) . "</td></tr>";
-        $total += $item['cost'];
-    }
+$quote_table = '<table width="100%" style="border-collapse: collapse;"><thead><tr><th align="left">Item</th><th align="right">Cost</th></tr></thead><tbody>';
+$total = 0;
 
-    $html_body = "
-    <html><body>
-    <h2>Hello {$client_name},</h2>
-    <p>Here is your quote from <strong>Your Building Company</strong>.</p>
-    <table width='100%' style='border-collapse: collapse;'>
-    <thead><tr><th align='left'>Item</th><th align='right'>Cost</th></tr></thead>
-    <tbody>
-    $items_table
-    <tr><td><strong>Total</strong></td><td style='text-align:right;'><strong>£" . number_format($total, 2) . "</strong></td></tr>
-    </tbody>
-    </table>
-    <p>Thank you for your interest!</p>
-    </body></html>";
+foreach ($items as $item) {
+    $quote_table .= "<tr><td>{$item['desc']}</td><td style='text-align:right;'>£" . number_format($item['cost'], 2) . "</td></tr>";
+    $total += $item['cost'];
+}
+$quote_table .= "<tr><td><strong>Total</strong></td><td style='text-align:right;'><strong>£" . number_format($total, 2) . "</strong></td></tr></tbody></table>";
+
+// Replace placeholders
+$body = $template;
+$body = str_replace('{{client_name}}', $client_name, $body);
+$body = str_replace('{{quote_table}}', $quote_table, $body);
+
+if ($logo) {
+    $body = "<p><img src='{$logo}' style='max-width:200px;' /></p>" . $body;
+}
 
     $headers = ['Content-Type: text/html; charset=UTF-8'];
 
@@ -158,7 +156,7 @@ add_action('save_post_quote', function ($post_id) {
 
     $attachments = [$pdf_path];
 
-    wp_mail($client_email, "Your Building Quote", $html_body, $headers, $attachments);
+    wp_mail($client_email, "Your Building Quote", $body, $headers, $attachments);
 
     update_post_meta($post_id, '_quote_status', 'sent');
 
@@ -172,3 +170,39 @@ add_action('save_post_quote', function ($post_id) {
 
 
 });
+
+add_action('admin_menu', function () {
+    add_options_page('Quote Settings', 'Quote Settings', 'manage_options', 'quote-settings', 'render_quote_settings_page');
+});
+
+add_action('admin_init', function () {
+    register_setting('quote_settings_group', 'quote_email_template');
+    register_setting('quote_settings_group', 'quote_logo_url');
+
+    add_settings_section('quote_main_section', 'Email Template Settings', null, 'quote-settings');
+
+    add_settings_field('quote_email_template', 'Email Template', function () {
+        $val = get_option('quote_email_template', '<p>Hello {{client_name}},</p><p>Here is your quote:</p>{{quote_table}}<p>Thanks!</p>');
+        echo '<textarea name="quote_email_template" rows="10" cols="80" style="width:100%">' . esc_textarea($val) . '</textarea>';
+    }, 'quote-settings', 'quote_main_section');
+
+    add_settings_field('quote_logo_url', 'Company Logo URL', function () {
+        $val = get_option('quote_logo_url', '');
+        echo '<input type="text" name="quote_logo_url" value="' . esc_attr($val) . '" style="width: 60%;" />';
+        echo '<p><em>Paste in a media library image URL or upload via Media.</em></p>';
+    }, 'quote-settings', 'quote_main_section');
+});
+function render_quote_settings_page() {
+    ?>
+    <div class="wrap">
+        <h1>Quote Email Settings</h1>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields('quote_settings_group');
+            do_settings_sections('quote-settings');
+            submit_button();
+            ?>
+        </form>
+    </div>
+    <?php
+}
