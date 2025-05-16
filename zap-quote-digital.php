@@ -8,7 +8,8 @@ Author: Your Name
 
 if (!defined('ABSPATH')) exit;
 
-require_once plugin_dir_path(__FILE__) . 'lib/dompdf/autoload.inc.php';
+require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
+
 
 
 // Register Custom Post Type
@@ -93,58 +94,81 @@ add_action('save_post_quote', function ($post_id) {
     }
 
     // Send Email if requested
-   if (isset($_POST['send_quote'])) {
+  if (isset($_POST['send_quote'])) {
     $client_email = get_post_meta($post_id, '_client_email', true);
     $client_name = get_post_meta($post_id, '_client_name', true);
     $items = get_post_meta($post_id, '_quote_items', true);
 
-    $items_table = '';
     $total = 0;
+
+    // HTML Email
+    $items_table = '';
     foreach ($items as $item) {
         $items_table .= "<tr><td>{$item['desc']}</td><td style='text-align:right;'>£" . number_format($item['cost'], 2) . "</td></tr>";
         $total += $item['cost'];
     }
 
     $html_body = "
-    <html>
-    <body style='font-family: Arial, sans-serif;'>
+    <html><body>
     <h2>Hello {$client_name},</h2>
     <p>Here is your quote from <strong>Your Building Company</strong>.</p>
     <table width='100%' style='border-collapse: collapse;'>
-    <thead>
-    <tr><th align='left'>Item</th><th align='right'>Cost</th></tr>
-    </thead>
+    <thead><tr><th align='left'>Item</th><th align='right'>Cost</th></tr></thead>
     <tbody>
     $items_table
     <tr><td><strong>Total</strong></td><td style='text-align:right;'><strong>£" . number_format($total, 2) . "</strong></td></tr>
     </tbody>
     </table>
     <p>Thank you for your interest!</p>
-    </body>
-    </html>";
+    </body></html>";
 
     $headers = ['Content-Type: text/html; charset=UTF-8'];
 
-    // PDF generation
-    $dompdf = new Dompdf();
-    $dompdf->loadHtml($html_body);
-    $dompdf->setPaper('A4', 'portrait');
-    $dompdf->render();
-    $pdf_output = $dompdf->output();
+    // --- FPDF PDF Generation ---
+    $pdf = new FPDF();
+    $pdf->AddPage();
+    $pdf->SetFont('Arial', 'B', 16);
+    $pdf->Cell(0, 10, 'Building Quote', 0, 1, 'C');
 
+    $pdf->SetFont('Arial', '', 12);
+    $pdf->Ln(5);
+    $pdf->Cell(0, 10, "Client: {$client_name}", 0, 1);
+    $pdf->Ln(5);
+
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(120, 8, 'Item', 1);
+    $pdf->Cell(40, 8, 'Cost (£)', 1);
+    $pdf->Ln();
+
+    $pdf->SetFont('Arial', '', 12);
+    foreach ($items as $item) {
+        $pdf->Cell(120, 8, $item['desc'], 1);
+        $pdf->Cell(40, 8, number_format($item['cost'], 2), 1, 0, 'R');
+        $pdf->Ln();
+        $total += $item['cost'];
+    }
+
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(120, 8, 'Total', 1);
+    $pdf->Cell(40, 8, number_format($total, 2), 1, 0, 'R');
+
+    // Save PDF temporarily
     $pdf_path = plugin_dir_path(__FILE__) . "temp-quote-{$post_id}.pdf";
-    file_put_contents($pdf_path, $pdf_output);
+    $pdf->Output('F', $pdf_path);
+
     $attachments = [$pdf_path];
 
     wp_mail($client_email, "Your Building Quote", $html_body, $headers, $attachments);
 
     update_post_meta($post_id, '_quote_status', 'sent');
 
+    // Delete temp PDF after script ends
     register_shutdown_function(function () use ($pdf_path) {
         if (file_exists($pdf_path)) {
             unlink($pdf_path);
         }
     });
 }
+
 
 });
