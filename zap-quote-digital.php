@@ -9,7 +9,7 @@ Author: Your Name
 if (!defined('ABSPATH')) exit;
 
 require_once plugin_dir_path(__FILE__) . 'lib/dompdf/autoload.inc.php';
-use Dompdf\Dompdf;
+
 
 // Register Custom Post Type
 add_action('init', function () {
@@ -93,40 +93,58 @@ add_action('save_post_quote', function ($post_id) {
     }
 
     // Send Email if requested
-    if (isset($_POST['send_quote'])) {
-        $client_email = get_post_meta($post_id, '_client_email', true);
-        $client_name = get_post_meta($post_id, '_client_name', true);
-        $items = get_post_meta($post_id, '_quote_items', true);
+   if (isset($_POST['send_quote'])) {
+    $client_email = get_post_meta($post_id, '_client_email', true);
+    $client_name = get_post_meta($post_id, '_client_name', true);
+    $items = get_post_meta($post_id, '_quote_items', true);
 
-       $items_table = '';
-$total = 0;
-foreach ($items as $item) {
-    $items_table .= "<tr><td>{$item['desc']}</td><td style='text-align:right;'>£" . number_format($item['cost'], 2) . "</td></tr>";
-    $total += $item['cost'];
+    $items_table = '';
+    $total = 0;
+    foreach ($items as $item) {
+        $items_table .= "<tr><td>{$item['desc']}</td><td style='text-align:right;'>£" . number_format($item['cost'], 2) . "</td></tr>";
+        $total += $item['cost'];
+    }
+
+    $html_body = "
+    <html>
+    <body style='font-family: Arial, sans-serif;'>
+    <h2>Hello {$client_name},</h2>
+    <p>Here is your quote from <strong>Your Building Company</strong>.</p>
+    <table width='100%' style='border-collapse: collapse;'>
+    <thead>
+    <tr><th align='left'>Item</th><th align='right'>Cost</th></tr>
+    </thead>
+    <tbody>
+    $items_table
+    <tr><td><strong>Total</strong></td><td style='text-align:right;'><strong>£" . number_format($total, 2) . "</strong></td></tr>
+    </tbody>
+    </table>
+    <p>Thank you for your interest!</p>
+    </body>
+    </html>";
+
+    $headers = ['Content-Type: text/html; charset=UTF-8'];
+
+    // PDF generation
+    $dompdf = new Dompdf();
+    $dompdf->loadHtml($html_body);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+    $pdf_output = $dompdf->output();
+
+    $pdf_path = plugin_dir_path(__FILE__) . "temp-quote-{$post_id}.pdf";
+    file_put_contents($pdf_path, $pdf_output);
+    $attachments = [$pdf_path];
+
+    wp_mail($client_email, "Your Building Quote", $html_body, $headers, $attachments);
+
+    update_post_meta($post_id, '_quote_status', 'sent');
+
+    register_shutdown_function(function () use ($pdf_path) {
+        if (file_exists($pdf_path)) {
+            unlink($pdf_path);
+        }
+    });
 }
 
-$html_body = "
-<html>
-<body style='font-family: Arial, sans-serif;'>
-<h2>Hello {$client_name},</h2>
-<p>Here is your quote from <strong>Your Building Company</strong>.</p>
-<table width='100%' style='border-collapse: collapse;'>
-<thead>
-<tr><th align='left'>Item</th><th align='right'>Cost</th></tr>
-</thead>
-<tbody>
-$items_table
-<tr><td><strong>Total</strong></td><td style='text-align:right;'><strong>£" . number_format($total, 2) . "</strong></td></tr>
-</tbody>
-</table>
-<p>Thank you for your interest!</p>
-</body>
-</html>
-";
-
-$headers = ['Content-Type: text/html; charset=UTF-8'];
-
-
-        wp_mail($client_email, "Your Building Quote", $body);
-    }
 });
