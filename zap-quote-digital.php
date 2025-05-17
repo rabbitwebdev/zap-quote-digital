@@ -306,7 +306,7 @@ add_action('template_redirect', function () {
         </table>
         <p style='margin-top:20px;'><strong>Payment Options:</strong></p>
         <p>Click the button below to proceed with payment.</p>";
-        echo do_shortcode('[stripe_checkout_custom amount="38787878" name="Red Mug"]');
+        echo do_shortcode('[stripe_checkout_custom amount="' . $total . '" name="Red Mug"]');
         wp_footer();
         exit;
     }
