@@ -334,12 +334,8 @@ add_action('template_redirect', function () {
         <p style='margin-top:20px;'><strong>Payment Options:</strong></p>
         <p>Click the button below to proceed with payment.</p>";
         // Assuming you have a Stripe subscription button shortcode
-        // Replace with your actual Stripe checkout shortcode
-        // You can also use a custom payment link or form here
-        // For example, using a Stripe Checkout button
-        // echo do_shortcode('[stripe_checkout_button amount="' . $total . '" name="Red Mug"]');
         $amount_for_stripe = (int) round(floatval($total) * 100);
-        echo do_shortcode('[stripe_checkout_custom amount="' . $amount_for_stripe . '" name="' . $title . '" email="' . $client_email . '"]');
+        echo do_shortcode('[stripe_checkout_custom amount="' . $amount_for_stripe . '" name="' . $title . '" description="' . $client_desc . '" email="' . $client_email . '"]');
         wp_footer();
         exit;
     }
