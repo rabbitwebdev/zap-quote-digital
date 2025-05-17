@@ -34,6 +34,8 @@ add_action('add_meta_boxes', function () {
 function quote_details_callback($post) {
     $client_name = get_post_meta($post->ID, '_client_name', true);
     $client_email = get_post_meta($post->ID, '_client_email', true);
+    $client_phone = get_post_meta($post->ID, '_client_phone', true);
+    $client_desc = get_post_meta($post->ID, '_client_desc', true);
     $items = get_post_meta($post->ID, '_quote_items', true) ?: [];
     $status = get_post_meta($post->ID, '_quote_status', true) ?: 'draft';
       // Calculate total
@@ -53,6 +55,9 @@ function quote_details_callback($post) {
 </label></p>
     <p><label>Client Name: <input type="text" name="client_name" value="<?= esc_attr($client_name) ?>" /></label></p>
     <p><label>Client Email: <input type="email" name="client_email" value="<?= esc_attr($client_email) ?>" /></label></p>
+    <p><label>Client Phone: <input type="text" name="client_phone" value="<?= esc_attr($client_phone) ?>" /></label></p>
+    <p><label>Client Description: <textarea name="client_desc" rows="4" style="width:100%;"><?= esc_textarea($client_desc) ?></textarea></label></p>
+    <p><strong>Quote Items:</strong></p>
     <div id="quote-items">
         <?php foreach ($items as $i => $item): ?>
             <p>
@@ -89,6 +94,12 @@ add_action('save_post_quote', function ($post_id) {
     if (isset($_POST['quote_status'])) {
     update_post_meta($post_id, '_quote_status', sanitize_text_field($_POST['quote_status']));
 }
+    if (isset($_POST['client_desc'])) {
+        update_post_meta($post_id, '_client_desc', sanitize_textarea_field($_POST['client_desc']));
+    }
+    if (isset($_POST['client_phone'])) {
+        update_post_meta($post_id, '_client_phone', sanitize_text_field($_POST['client_phone']));
+    }
     if (isset($_POST['client_name'])) {
         update_post_meta($post_id, '_client_name', sanitize_text_field($_POST['client_name']));
     }
@@ -109,7 +120,10 @@ add_action('save_post_quote', function ($post_id) {
   if (isset($_POST['send_quote'])) {
     $client_email = get_post_meta($post_id, '_client_email', true);
     $client_name = get_post_meta($post_id, '_client_name', true);
+    $client_phone = get_post_meta($post_id, '_client_phone', true);
+    $client_desc = get_post_meta($post_id, '_client_desc', true);
     $items = get_post_meta($post_id, '_quote_items', true);
+
 
    $template = get_option('quote_email_template', '');
 $logo = get_option('quote_logo_url', '');
@@ -139,6 +153,8 @@ $quote_table .= "<tr><td><strong>Total</strong></td><td style='text-align:right;
 $body = $template;
 $body = str_replace('{{client_name}}', $client_name, $body);
 $body = str_replace('{{quote_table}}', $quote_table, $body);
+$body = str_replace('{{client_desc}}', $client_desc, $body);
+$body = str_replace('{{client_phone}}', $client_phone, $body);
 $body .= "<p>
     <a href='{$accept_url}' style='background:#4CAF50;color:white;padding:10px 15px;text-decoration:none;border-radius:4px;'>Accept Quote</a>
     &nbsp;
@@ -160,11 +176,14 @@ if ($logo) {
     $pdf->SetFont('Arial', '', 12);
     $pdf->Ln(5);
     $pdf->Cell(0, 10, "Client: {$client_name}", 0, 1);
+    $pdf->Cell(0, 10, "Email: {$client_email}", 0, 1);
+    $pdf->Cell(0, 10, "Phone: {$client_phone}", 0, 1);
+    $pdf->Cell(0, 10, "Description: {$client_desc}", 0, 1);
     $pdf->Ln(5);
 
     $pdf->SetFont('Arial', 'B', 12);
     $pdf->Cell(120, 8, 'Item', 1);
-    $pdf->Cell(40, 8, 'Cost (£)', 1);
+    $pdf->Cell(40, 8, 'Cost', 1);
     $pdf->Ln();
 
     $pdf->SetFont('Arial', '', 12);
@@ -177,7 +196,7 @@ if ($logo) {
 
     $pdf->SetFont('Arial', 'B', 12);
     $pdf->Cell(120, 8, 'Total', 1);
-    $pdf->Cell(40, 8, number_format($total, 2), 1, 0, 'R');
+    $pdf->Cell(40, 8, '£', number_format($total, 2), 1, 0, 'R');
 
     // Save PDF temporarily
     $pdf_path = plugin_dir_path(__FILE__) . "temp-quote-{$post_id}.pdf";
@@ -270,6 +289,8 @@ add_action('template_redirect', function () {
         $admin_email = get_option('admin_email');
         $client_name = get_post_meta($quote_id, '_client_name', true);
         $client_email = get_post_meta($quote_id, '_client_email', true);
+        $client_phone = get_post_meta($quote_id, '_client_phone', true);
+        $client_desc = get_post_meta($quote_id, '_client_desc', true);
         $title = get_the_title($quote_id);
         $items = get_post_meta($quote_id, '_quote_items', true) ?: [];
         $total = 0;
@@ -282,7 +303,11 @@ add_action('template_redirect', function () {
         wp_head(); // to load styles
         echo "<div style='max-width:600px;margin:50px auto;font-family:sans-serif;text-align:center;'>
             <h2>Thank you {$client_name} !</h2>
+             <p>Quote Title: {$title}</p>
             <p>You have successfully <strong>{$new_status}</strong> the quote.</p>
+            <p>Quote ID: {$quote_id}</p>
+           <p>{$client_desc}</p>
+            <p>{$client_phone}</p>
         </div>";
         echo "<div style='max-width:600px;margin:50px auto;font-family:sans-serif;text-align:center;'>
             <h2>Quote Summary</h2>
