@@ -269,6 +269,7 @@ add_action('template_redirect', function () {
         // Optional: notify admin
         $admin_email = get_option('admin_email');
         $client_name = get_post_meta($quote_id, '_client_name', true);
+        $client_email = get_post_meta($quote_id, '_client_email', true);
         $title = get_the_title($quote_id);
         $items = get_post_meta($quote_id, '_quote_items', true) ?: [];
         $total = 0;
@@ -313,7 +314,7 @@ add_action('template_redirect', function () {
         // For example, using a Stripe Checkout button
         // echo do_shortcode('[stripe_checkout_button amount="' . $total . '" name="Red Mug"]');
         $amount_for_stripe = (int) round(floatval($total) * 100);
-echo do_shortcode('[stripe_checkout_custom amount="' . $amount_for_stripe . '" name="' . $title . '"]');
+        echo do_shortcode('[stripe_checkout_custom amount="' . $amount_for_stripe . '" name="' . $title . '" email="' . $client_email . '"]');
         wp_footer();
         exit;
     }
