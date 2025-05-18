@@ -36,6 +36,7 @@ function quote_details_callback($post) {
     $client_email = get_post_meta($post->ID, '_client_email', true);
     $client_phone = get_post_meta($post->ID, '_client_phone', true);
     $client_desc = get_post_meta($post->ID, '_client_desc', true);
+    $client_address = get_post_meta($post->ID, '_client_address', true);
     $items = get_post_meta($post->ID, '_quote_items', true) ?: [];
     $status = get_post_meta($post->ID, '_quote_status', true) ?: 'draft';
 
@@ -64,6 +65,7 @@ function quote_details_callback($post) {
     <p><label>Client Name: <input type="text" name="client_name" value="<?= esc_attr($client_name) ?>" /></label></p>
     <p><label>Client Email: <input type="email" name="client_email" value="<?= esc_attr($client_email) ?>" /></label></p>
     <p><label>Client Phone: <input type="text" name="client_phone" value="<?= esc_attr($client_phone) ?>" /></label></p>
+        <p><label>Client Address: <textarea name="client_address" rows="4" style="width:100%;"><?= esc_textarea($client_address) ?></textarea></label></p>
     <p><label>Project Description: <textarea name="client_desc" rows="4" style="width:100%;"><?= esc_textarea($client_desc) ?></textarea></label></p>
     <p><strong>Quote Items:</strong></p>
     <div id="quote-items">
@@ -140,6 +142,9 @@ add_action('save_post_quote', function ($post_id) {
     if (isset($_POST['client_desc'])) {
         update_post_meta($post_id, '_client_desc', sanitize_textarea_field($_POST['client_desc']));
     }
+     if (isset($_POST['client_address'])) {
+        update_post_meta($post_id, '_client_address', sanitize_textarea_field($_POST['client_address']));
+    }
     if (isset($_POST['client_phone'])) {
         update_post_meta($post_id, '_client_phone', sanitize_text_field($_POST['client_phone']));
     }
@@ -176,6 +181,7 @@ add_action('save_post_quote', function ($post_id) {
     $client_name = get_post_meta($post_id, '_client_name', true);
     $client_phone = get_post_meta($post_id, '_client_phone', true);
     $client_desc = get_post_meta($post_id, '_client_desc', true);
+    $client_address = get_post_meta($post_id, '_client_address', true);
     $items = get_post_meta($post_id, '_quote_items', true);
     $deposit_type = get_post_meta($post_id, '_quote_deposit_type', true) ?: 'percent';
 $deposit_value = get_post_meta($post_id, '_quote_deposit_value', true) ?: 50;
@@ -398,8 +404,6 @@ add_action('template_redirect', function () {
 $checkout_session = \Stripe\Checkout\Session::create([
     'payment_method_types' => ['card'],
     'customer_email' => $client_email,
-    'client_reference_id' => $quote_id,
-    'customer_name' => $client_name,
     'line_items' => [[
         'price_data' => [
             'currency' => 'gbp',
@@ -412,7 +416,7 @@ $checkout_session = \Stripe\Checkout\Session::create([
         'quantity' => 1,
     ]],
     'mode' => 'payment',
-    'success_url' => home_url('/thank-you?quote_payment=success&quote_id=' . $quote_id),
+    'success_url' => home_url('?quote_payment=success&quote_id=' . $post_id),
     'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
 ]);
 
@@ -455,10 +459,7 @@ update_post_meta($post_id, '_stripe_checkout_url', esc_url($payment_url));
         <p style='margin-top:20px;'><strong>Deposit:</strong> £" . number_format($deposit, 2) . "</p>
         <p style='margin-top:20px;'><strong>Payment Options:</strong></p>
         <p><strong>To secure your quote, pay the deposit here:</strong></p>
-<p><a href='{$payment_url}' class='button'>Pay Deposit</a></p>
-        <p>Click the button below to proceed with payment.</p>";     // Assuming you have a Stripe subscription button shortcode
-        $amount_for_stripe = (int) round(floatval($deposit) * 100);
-        echo do_shortcode('[stripe_checkout_custom amount="' . $amount_for_stripe . '" name="' . $title . '" description="' . $client_desc . '" email="' . $client_email . '"]');
+        <p><a href='{$payment_url}' class='button'>Pay Deposit</a></p>";
         wp_footer();
         exit;
     }
