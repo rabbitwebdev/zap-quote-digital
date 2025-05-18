@@ -289,10 +289,7 @@ if ($logo) {
         $deposit = ($deposit_type === 'percent')
             ? $total * (floatval($deposit_value) / 100)
             : floatval($deposit_value);
-
-        $total     = floatval(get_post_meta($post_id, '_quote_total', true));
-$deposit   = floatval(get_post_meta($post_id, '_quote_deposit', true));
-$balance   = $total - $deposit;
+        $balance   = $total - $deposit;
 
 if ($balance > 0) {
     $balance_session = \Stripe\Checkout\Session::create([
@@ -464,6 +461,7 @@ $checkout_session = \Stripe\Checkout\Session::create([
         'quantity' => 1,
     ]],
     'mode' => 'payment',
+    'success_url' => home_url('/thank-you?session_id={CHECKOUT_SESSION_ID}'),
     'success_url' => site_url('?quote_payment=success&quote_id=' . $post_id),
     'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
 ]);
