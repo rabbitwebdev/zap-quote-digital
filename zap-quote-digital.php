@@ -2,7 +2,7 @@
 /*
 Plugin Name: Building Quotes
 Description: A plugin to create and send building quotes to clients.
-Version: 1.0
+Version: 2.0
 Author: Your Name
 */
 
@@ -38,11 +38,19 @@ function quote_details_callback($post) {
     $client_desc = get_post_meta($post->ID, '_client_desc', true);
     $items = get_post_meta($post->ID, '_quote_items', true) ?: [];
     $status = get_post_meta($post->ID, '_quote_status', true) ?: 'draft';
+
+    $deposit_type = get_post_meta($post->ID, '_quote_deposit_type', true) ?: 'percent';
+    $deposit_value = get_post_meta($post->ID, '_quote_deposit_value', true) ?: 50;
       // Calculate total
     $total = 0;
     foreach ($items as $item) {
         $total += floatval($item['cost'] ?? 0);
     }
+
+     // Calculate deposit
+    $deposit = ($deposit_type === 'percent')
+        ? $total * (floatval($deposit_value) / 100)
+        : floatval($deposit_value);
     
 ?>
 <p><label>Status: 
@@ -68,6 +76,21 @@ function quote_details_callback($post) {
         <p><button type="button" onclick="addQuoteItem()">Add Item</button></p>
     </div>
      <p><strong>Total Cost: £<?= number_format($total, 2) ?></strong></p>
+     <h4>Deposit</h4>
+    <p>
+        <label>Type: 
+            <select name="quote_deposit_type" id="quote_deposit_type" onchange="updateDepositDisplay()">
+                <option value="percent" <?= selected($deposit_type, 'percent') ?>>Percentage (%)</option>
+                <option value="custom" <?= selected($deposit_type, 'custom') ?>>Custom Amount (£)</option>
+            </select>
+        </label>
+    </p>
+    <p>
+        <label>Value: 
+            <input type="number" name="quote_deposit_value" id="quote_deposit_value" value="<?= esc_attr($deposit_value) ?>" step="0.01" onchange="updateDepositDisplay()" />
+        </label>
+    </p>
+    <p><strong>Calculated Deposit: £<span id="deposit-calculated"><?= number_format($deposit, 2) ?></span></strong></p>
     <p><button type="submit" name="send_quote" class="button button-primary">Send Quote</button></p>
 
     <script>
@@ -80,6 +103,18 @@ function quote_details_callback($post) {
             `;
             document.querySelector('#quote-items').insertBefore(container, document.querySelector('#quote-items').lastElementChild);
         }
+         function updateDepositDisplay() {
+            const type = document.getElementById('quote_deposit_type').value;
+            const val = parseFloat(document.getElementById('quote_deposit_value').value) || 0;
+            const total = <?= $total ?>;
+            let calculated = 0;
+            if (type === 'percent') {
+                calculated = total * (val / 100);
+            } else {
+                calculated = val;
+            }
+            document.getElementById('deposit-calculated').textContent = calculated.toFixed(2);
+        }
     </script>
     <?php
 }
@@ -89,6 +124,12 @@ add_action('save_post_quote', function ($post_id) {
     if (!get_post_meta($post_id, '_quote_token', true)) {
     $token = wp_generate_password(20, false);
     update_post_meta($post_id, '_quote_token', $token);
+}
+if (isset($_POST['quote_deposit_type'])) {
+    update_post_meta($post_id, '_quote_deposit_type', sanitize_text_field($_POST['quote_deposit_type']));
+}
+if (isset($_POST['quote_deposit_value'])) {
+    update_post_meta($post_id, '_quote_deposit_value', floatval($_POST['quote_deposit_value']));
 }
 
     if (isset($_POST['quote_status'])) {
