@@ -293,6 +293,7 @@ add_action('admin_init', function () {
     add_settings_section('quote_main_section', 'Email Template Settings', null, 'quote-settings');
 
     add_settings_field('quote_email_template', 'Email Template', function () {
+        echo '<p>You can use the following placeholders: <code>{{client_name}}</code>, <code>{{quote_table}}</code>, <code>{{client_desc}}</code>, <code>{{client_phone}}</code> </p>';
         $val = get_option('quote_email_template', '<p>Hello {{client_name}},</p><p>Here is your quote:</p>{{quote_table}}<p>Thanks!</p>');
         echo '<textarea name="quote_email_template" rows="10" cols="80" style="width:100%">' . esc_textarea($val) . '</textarea>';
     }, 'quote-settings', 'quote_main_section');
