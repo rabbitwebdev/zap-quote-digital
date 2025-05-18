@@ -364,11 +364,14 @@ add_action('template_redirect', function () {
         $site_name = get_bloginfo('name');
 $checkout_session = \Stripe\Checkout\Session::create([
     'payment_method_types' => ['card'],
+    'customer_email' => $client_email,
+    'client_reference_id' => $quote_id,
     'line_items' => [[
         'price_data' => [
             'currency' => 'gbp',
             'product_data' => [
                 'name' => "Deposit for Quote #{$post_id} - {$site_name}",
+                'description' => $client_desc,
             ],
             'unit_amount' => intval($deposit * 100),
         ],
