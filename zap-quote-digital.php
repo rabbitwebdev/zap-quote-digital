@@ -92,6 +92,7 @@ function quote_details_callback($post) {
     </p>
     <p><strong>Calculated Deposit: £<span id="deposit-calculated"><?= number_format($deposit, 2) ?></span></strong></p>
     <p><button type="submit" name="send_quote" class="button button-primary">Send Quote</button></p>
+    <p><button type="submit" name="send_final_payment" class="button">Send Final Payment</button></p>
 
     <script>
         function addQuoteItem() {
@@ -273,6 +274,91 @@ if ($logo) {
     });
 }
 
+    if (isset($_POST['send_final_payment'])) {
+        $client_email = get_post_meta($post_id, '_client_email', true);
+        $client_name = get_post_meta($post_id, '_client_name', true);
+        $client_phone = get_post_meta($post_id, '_client_phone', true);
+        $client_desc = get_post_meta($post_id, '_client_desc', true);
+        $items = get_post_meta($post_id, '_quote_items', true);
+        $total = 0;
+        foreach ($items as $item) {
+            $total += floatval($item['cost'] ?? 0);
+        }
+        $deposit_value = get_post_meta($post_id, '_quote_deposit_value', true) ?: 50;
+        $deposit_type = get_post_meta($post_id, '_quote_deposit_type', true) ?: 'percent';
+        $deposit = ($deposit_type === 'percent')
+            ? $total * (floatval($deposit_value) / 100)
+            : floatval($deposit_value);
+
+        $total     = floatval(get_post_meta($post_id, '_quote_total', true));
+$deposit   = floatval(get_post_meta($post_id, '_quote_deposit', true));
+$balance   = $total - $deposit;
+
+if ($balance > 0) {
+    $balance_session = \Stripe\Checkout\Session::create([
+        'payment_method_types' => ['card'],
+        'line_items' => [[
+            'price_data' => [
+                'currency' => 'gbp',
+                'product_data' => [
+                    'name' => "Final Payment for Quote #{$post_id}",
+                ],
+                'unit_amount' => intval($balance * 100),
+            ],
+            'quantity' => 1,
+        ]],
+        'mode' => 'payment',
+        'success_url' => site_url('?quote_payment=full_paid&quote_id=' . $post_id),
+        'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
+    ]);
+
+    update_post_meta($post_id, '_stripe_balance_url', esc_url($balance_session->url));
+}
+        $template = get_option('quote_email_template', '');
+        $logo = get_option('quote_logo_url', '');
+        $quote_token = get_post_meta($post_id, '_quote_token', true);
+        $accept_url = add_query_arg([
+            'quote_id' => $post_id,
+            'action' => 'accept',
+            'token' => $quote_token
+        ], home_url('/quote-response/'));
+
+        $reject_url = add_query_arg([
+            'quote_id' => $post_id,
+            'action' => 'reject',
+            'token' => $quote_token
+        ], home_url('/quote-response/'));
+
+        $quote_table = '<table width="100%" style="border-collapse: collapse;"><thead><tr><th align="left">Item</th><th align="right">Cost</th></tr></thead><tbody>';
+        foreach ($items as $item) {
+            $quote_table .= "<tr><td>{$item['desc']}</td><td style='text-align:right;'>£" . number_format($item['cost'], 2) . "</td></tr>";
+        }
+        $quote_table .= "<tr><td><strong>Total</strong></td><td style='text-align:right;'><strong>£" . number_format($total, 2) . "</strong></td></tr>
+<tr><td><strong>Deposit Required</strong></td><td style='text-align:right;'><strong>£" . number_format($deposit, 2) . "</strong></td></tr>
+<tr><td><strong>Balance Due</strong></td><td style='text-align:right;'><strong>£" . number_format($balance, 2) . "</strong></td></tr>";
+        $quote_table .= "</tbody></table>";
+
+        // Replace placeholders
+        $body = $template;
+        $body = str_replace('{{client_name}}', $client_name, $body);
+        $body = str_replace('{{quote_table}}', $quote_table, $body);
+        $body = str_replace('{{client_desc}}', $client_desc, $body);
+        $body = str_replace('{{client_phone}}', $client_phone, $body);
+        $body .= "<p><a href='{$balance_session->url}' style='
+    background: #0073aa;
+    color: white;
+    padding: 10px 15px;
+    text-decoration: none;
+    border-radius: 5px;
+'>Pay Remaining Balance</a></p>";
+
+        if ($logo) {
+            $body = "<p><img src='{$logo}' style='max-width:200px;' /></p>" . $body;
+        }
+
+        wp_mail($client_email, "Final Payment for Building Quote", $body, ['Content-Type: text/html; charset=UTF-8']);
+    }
+
 
 });
 
@@ -429,5 +515,39 @@ update_post_meta($post_id, '_stripe_checkout_url', esc_url($payment_url));
         echo do_shortcode('[stripe_checkout_custom amount="' . $amount_for_stripe . '" name="' . $title . '" description="' . $client_desc . '" email="' . $client_email . '"]');
         wp_footer();
         exit;
+    }
+});
+
+add_action('template_redirect', function () {
+    if (isset($_GET['quote_payment']) && isset($_GET['quote_id'])) {
+        $quote_id = intval($_GET['quote_id']);
+        $status = $_GET['quote_payment'];
+
+        if ($status === 'success') {
+            update_post_meta($quote_id, '_quote_status', 'deposit_paid');
+
+            // Send confirmation email
+            $client_email = get_post_meta($quote_id, '_client_email', true);
+            $client_name  = get_post_meta($quote_id, '_client_name', true);
+            $subject = 'Deposit Received - Thank You!';
+            $message = "
+                <html><body>
+                <h2>Thank you, {$client_name}!</h2>
+                <p>We've received your deposit for Quote #{$quote_id}.</p>
+                <p>We'll be in touch soon to move forward.</p>
+                <p><strong>Your Company Name</strong></p>
+                </body></html>
+            ";
+            $headers = ['Content-Type: text/html; charset=UTF-8'];
+            wp_mail($client_email, $subject, $message, $headers);
+
+            wp_redirect(site_url('/thank-you/'));
+            exit;
+        }
+
+        if ($status === 'cancel') {
+            wp_redirect(site_url('/payment-cancelled/'));
+            exit;
+        }
     }
 });
