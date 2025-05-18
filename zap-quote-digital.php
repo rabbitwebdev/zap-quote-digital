@@ -359,6 +359,28 @@ add_action('template_redirect', function () {
         $deposit = ($deposit_type === 'percent')
             ? $total * (floatval($deposit_value) / 100)
             : floatval($deposit_value);
+            $secret_key = get_option('scf_stripe_secret_key');
+            \Stripe\Stripe::setApiKey($secret_key);
+        $site_name = get_bloginfo('name');
+$checkout_session = \Stripe\Checkout\Session::create([
+    'payment_method_types' => ['card'],
+    'line_items' => [[
+        'price_data' => [
+            'currency' => 'gbp',
+            'product_data' => [
+                'name' => "Deposit for Quote #{$post_id} - {$site_name}",
+            ],
+            'unit_amount' => intval($deposit * 100),
+        ],
+        'quantity' => 1,
+    ]],
+    'mode' => 'payment',
+    'success_url' => site_url('?quote_payment=success&quote_id=' . $post_id),
+    'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
+]);
+
+$payment_url = $checkout_session->url;
+update_post_meta($post_id, '_stripe_checkout_url', esc_url($payment_url));
         wp_mail($admin_email, "Quote {$new_status}", "Client {$client_name} has {$new_status} the quote #{$quote_id}.");
 
         // Output message
@@ -395,6 +417,8 @@ add_action('template_redirect', function () {
         </table>
         <p style='margin-top:20px;'><strong>Deposit:</strong> £" . number_format($deposit, 2) . "</p>
         <p style='margin-top:20px;'><strong>Payment Options:</strong></p>
+        <p><strong>To secure your quote, pay the deposit here:</strong></p>
+<p><a href='{$payment_url}' class='button'>Pay Deposit</a></p>
         <p>Click the button below to proceed with payment.</p>";
         // Assuming you have a Stripe subscription button shortcode
         echo do_shortcode('[zap_stripe_advanced_form]');
