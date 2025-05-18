@@ -334,6 +334,7 @@ add_action('template_redirect', function () {
         <p style='margin-top:20px;'><strong>Payment Options:</strong></p>
         <p>Click the button below to proceed with payment.</p>";
         // Assuming you have a Stripe subscription button shortcode
+        echo do_shortcode('[zap_stripe_advanced_form]');
         $amount_for_stripe = (int) round(floatval($total) * 100);
         echo do_shortcode('[stripe_checkout_custom amount="' . $amount_for_stripe . '" name="' . $title . '" description="' . $client_desc . '" email="' . $client_email . '"]');
         wp_footer();
