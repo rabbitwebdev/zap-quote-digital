@@ -406,7 +406,6 @@ $checkout_session = \Stripe\Checkout\Session::create([
             'product_data' => [
                 'name' => "Deposit for Quote #{$post_id} - {$site_name}",
                 'description' => $client_desc,
-                'images' => [$logo],
             ],
             'unit_amount' => intval($deposit * 100),
         ],
@@ -457,8 +456,7 @@ update_post_meta($post_id, '_stripe_checkout_url', esc_url($payment_url));
         <p style='margin-top:20px;'><strong>Payment Options:</strong></p>
         <p><strong>To secure your quote, pay the deposit here:</strong></p>
 <p><a href='{$payment_url}' class='button'>Pay Deposit</a></p>
-        <p>Click the button below to proceed with payment.</p>";
-        // Assuming you have a Stripe subscription button shortcode
+        <p>Click the button below to proceed with payment.</p>";     // Assuming you have a Stripe subscription button shortcode
         $amount_for_stripe = (int) round(floatval($deposit) * 100);
         echo do_shortcode('[stripe_checkout_custom amount="' . $amount_for_stripe . '" name="' . $title . '" description="' . $client_desc . '" email="' . $client_email . '"]');
         wp_footer();
