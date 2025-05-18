@@ -125,12 +125,7 @@ add_action('save_post_quote', function ($post_id) {
     $token = wp_generate_password(20, false);
     update_post_meta($post_id, '_quote_token', $token);
 }
-if (isset($_POST['quote_deposit_type'])) {
-    update_post_meta($post_id, '_quote_deposit_type', sanitize_text_field($_POST['quote_deposit_type']));
-}
-if (isset($_POST['quote_deposit_value'])) {
-    update_post_meta($post_id, '_quote_deposit_value', floatval($_POST['quote_deposit_value']));
-}
+
 
     if (isset($_POST['quote_status'])) {
     update_post_meta($post_id, '_quote_status', sanitize_text_field($_POST['quote_status']));
@@ -157,6 +152,13 @@ if (isset($_POST['quote_deposit_value'])) {
         update_post_meta($post_id, '_quote_items', $clean_items);
     }
 
+    if (isset($_POST['quote_deposit_type'])) {
+    update_post_meta($post_id, '_quote_deposit_type', sanitize_text_field($_POST['quote_deposit_type']));
+    }
+    if (isset($_POST['quote_deposit_value'])) {
+        update_post_meta($post_id, '_quote_deposit_value', floatval($_POST['quote_deposit_value']));
+    }
+
     // Send Email if requested
   if (isset($_POST['send_quote'])) {
     $client_email = get_post_meta($post_id, '_client_email', true);
@@ -164,7 +166,8 @@ if (isset($_POST['quote_deposit_value'])) {
     $client_phone = get_post_meta($post_id, '_client_phone', true);
     $client_desc = get_post_meta($post_id, '_client_desc', true);
     $items = get_post_meta($post_id, '_quote_items', true);
-    
+    $deposit_type = get_post_meta($post_id, '_quote_deposit_type', true) ?: 'percent';
+$deposit_value = get_post_meta($post_id, '_quote_deposit_value', true) ?: 50;
 
 
    $template = get_option('quote_email_template', '');
@@ -189,14 +192,13 @@ foreach ($items as $item) {
     $quote_table .= "<tr><td>{$item['desc']}</td><td style='text-align:right;'>£" . number_format($item['cost'], 2) . "</td></tr>";
     $total += $item['cost'];
 }
-$quote_table .= "<tr><td><strong>Total</strong></td><td style='text-align:right;'><strong>£" . number_format($total, 2) . "</strong></td></tr></tbody></table>";
-
-$deposit_type = get_post_meta($post_id, '_quote_deposit_type', true) ?: 'percent';
-$deposit_value = get_post_meta($post_id, '_quote_deposit_value', true) ?: 50;
-
 $deposit = ($deposit_type === 'percent')
     ? $total * (floatval($deposit_value) / 100)
     : floatval($deposit_value);
+$quote_table .= "<tr><td><strong>Total</strong></td><td style='text-align:right;'><strong>£" . number_format($total, 2) . "</strong></td></tr>
+<tr><td><strong>Deposit Required</strong></td><td style='text-align:right;'><strong>£" . number_format($deposit, 2) . "</strong></td></tr>
+</tbody></table>";
+
 
 // Replace placeholders
 $body = $template;
@@ -204,7 +206,6 @@ $body = str_replace('{{client_name}}', $client_name, $body);
 $body = str_replace('{{quote_table}}', $quote_table, $body);
 $body = str_replace('{{client_desc}}', $client_desc, $body);
 $body = str_replace('{{client_phone}}', $client_phone, $body);
-$body = str_replace('{{quote_deposit}}', number_format($deposit, 2), $body);
 $body .= "<p>
     <a href='{$accept_url}' style='background:#4CAF50;color:white;padding:10px 15px;text-decoration:none;border-radius:4px;'>Accept Quote</a>
     &nbsp;
