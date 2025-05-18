@@ -64,7 +64,7 @@ function quote_details_callback($post) {
     <p><label>Client Name: <input type="text" name="client_name" value="<?= esc_attr($client_name) ?>" /></label></p>
     <p><label>Client Email: <input type="email" name="client_email" value="<?= esc_attr($client_email) ?>" /></label></p>
     <p><label>Client Phone: <input type="text" name="client_phone" value="<?= esc_attr($client_phone) ?>" /></label></p>
-    <p><label>Client Description: <textarea name="client_desc" rows="4" style="width:100%;"><?= esc_textarea($client_desc) ?></textarea></label></p>
+    <p><label>Project Description: <textarea name="client_desc" rows="4" style="width:100%;"><?= esc_textarea($client_desc) ?></textarea></label></p>
     <p><strong>Quote Items:</strong></p>
     <div id="quote-items">
         <?php foreach ($items as $i => $item): ?>
@@ -399,20 +399,21 @@ $checkout_session = \Stripe\Checkout\Session::create([
     'payment_method_types' => ['card'],
     'customer_email' => $client_email,
     'client_reference_id' => $quote_id,
+    'customer_name' => $client_name,
     'line_items' => [[
         'price_data' => [
             'currency' => 'gbp',
             'product_data' => [
                 'name' => "Deposit for Quote #{$post_id} - {$site_name}",
                 'description' => $client_desc,
+                'images' => [$logo],
             ],
             'unit_amount' => intval($deposit * 100),
         ],
         'quantity' => 1,
     ]],
     'mode' => 'payment',
-    'success_url' => home_url('/thank-you?session_id={CHECKOUT_SESSION_ID}'),
-    'success_url' => site_url('?quote_payment=success&quote_id=' . $post_id),
+    'success_url' => home_url('/thank-you?quote_payment=success&quote_id=' . $quote_id),
     'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
 ]);
 
@@ -458,7 +459,6 @@ update_post_meta($post_id, '_stripe_checkout_url', esc_url($payment_url));
 <p><a href='{$payment_url}' class='button'>Pay Deposit</a></p>
         <p>Click the button below to proceed with payment.</p>";
         // Assuming you have a Stripe subscription button shortcode
-        echo do_shortcode('[zap_stripe_advanced_form]');
         $amount_for_stripe = (int) round(floatval($deposit) * 100);
         echo do_shortcode('[stripe_checkout_custom amount="' . $amount_for_stripe . '" name="' . $title . '" description="' . $client_desc . '" email="' . $client_email . '"]');
         wp_footer();
