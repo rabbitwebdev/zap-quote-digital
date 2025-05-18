@@ -166,6 +166,10 @@ add_action('save_post_quote', function ($post_id) {
         update_post_meta($post_id, '_quote_deposit_value', floatval($_POST['quote_deposit_value']));
     }
 
+    if (isset($_POST['quote_terms_page_id'])) {
+    update_option('quote_terms_page_id', intval($_POST['quote_terms_page_id']));
+}
+
     // Send Email if requested
   if (isset($_POST['send_quote'])) {
     $client_email = get_post_meta($post_id, '_client_email', true);
@@ -178,6 +182,7 @@ $deposit_value = get_post_meta($post_id, '_quote_deposit_value', true) ?: 50;
 
 
    $template = get_option('quote_email_template', '');
+   $terms_page_id = get_option('quote_terms_page_id');
 $logo = get_option('quote_logo_url', '');
 $quote_token = get_post_meta($post_id, '_quote_token', true);
 $accept_url = add_query_arg([
@@ -213,6 +218,8 @@ $body = str_replace('{{client_name}}', $client_name, $body);
 $body = str_replace('{{quote_table}}', $quote_table, $body);
 $body = str_replace('{{client_desc}}', $client_desc, $body);
 $body = str_replace('{{client_phone}}', $client_phone, $body);
+$terms_link = get_permalink($terms_page_id);
+$body .= "<p><small>By accepting this quote, you agree to our <a href='{$terms_link}'>Terms & Conditions</a>.</small></p>";
 $body .= "<p>
     <a href='{$accept_url}' style='background:#4CAF50;color:white;padding:10px 15px;text-decoration:none;border-radius:4px;'>Accept Quote</a>
     &nbsp;
@@ -289,6 +296,9 @@ add_action('admin_menu', function () {
 add_action('admin_init', function () {
     register_setting('quote_settings_group', 'quote_email_template');
     register_setting('quote_settings_group', 'quote_logo_url');
+    register_setting('quote_settings_group', 'quote_email_subject');
+    register_setting( 'quote_settings_group', 'quote_terms_page_id');
+    
 
     add_settings_section('quote_main_section', 'Email Template Settings', null, 'quote-settings');
 
@@ -302,6 +312,22 @@ add_action('admin_init', function () {
         $val = get_option('quote_logo_url', '');
         echo '<input type="text" name="quote_logo_url" value="' . esc_attr($val) . '" style="width: 60%;" />';
         echo '<p><em>Paste in a media library image URL or upload via Media.</em></p>';
+    }, 'quote-settings', 'quote_main_section');
+
+    add_settings_field('quote_email_subject', 'Email Subject', function () {
+        $val = get_option('quote_email_subject', 'Your Quote');
+        echo '<input type="text" name="quote_email_subject" value="' . esc_attr($val) . '" style="width: 60%;" />';
+    }, 'quote-settings', 'quote_main_section');
+
+    add_settings_field('quote_terms_page_id', 'Terms and Conditions Page', function () {
+        $val = get_option('quote_terms_page_id', '');
+        $pages = get_pages();
+        echo '<select name="quote_terms_page_id" style="width: 60%;">';
+        echo '<option value="">Select a page</option>';
+        foreach ($pages as $page) {
+            echo '<option value="' . esc_attr($page->ID) . '"' . selected($val, $page->ID, false) . '>' . esc_html($page->post_title) . '</option>';
+        }
+        echo '</select>';
     }, 'quote-settings', 'quote_main_section');
 });
 function render_quote_settings_page() {
