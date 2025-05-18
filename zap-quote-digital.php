@@ -244,13 +244,16 @@ if ($logo) {
         $pdf->Ln();
         $total += $item['cost'];
     }
+    $deposit = ($deposit_type === 'percent')
+    ? $total * (floatval($deposit_value) / 100)
+    : floatval($deposit_value);
 
     $pdf->SetFont('Arial', 'B', 12);
     $pdf->Cell(120, 8, 'Total', 1);
     $pdf->Cell(40, 8, '£' . number_format($total, 2), 1, 0, 'R');
-
-    $pdf->Cell(130, 10, 'Deposit Required', 1);
-$pdf->Cell(40, 10, '£' . number_format($deposit, 2), 1, 1, 'R');
+    $pdf->Ln(5);
+    $pdf->Cell(120, 8, 'Deposit Required', 1);
+    $pdf->Cell(40, 8, '£' . number_format($deposit, 2), 1, 1, 'R');
 
     // Save PDF temporarily
     $pdf_path = plugin_dir_path(__FILE__) . "temp-quote-{$post_id}.pdf";
@@ -387,11 +390,10 @@ add_action('template_redirect', function () {
         echo "<tr>
                     <td style='border:1px solid #000;padding:8px;'><strong>Total</strong></td>
                     <td style='border:1px solid #000;padding:8px;text-align:right;'><strong>£" . number_format($total, 2) . "</strong></td>
-                    <td style='border:1px solid #000;padding:8px;'><strong>Deposit Required</strong></td>
-                    <td style='border:1px solid #000;padding:8px;text-align:right;'><strong>£" . number_format($deposit, 2) . "</strong></td>
                 </tr>
             </tbody>
         </table>
+        <p style='margin-top:20px;'><strong>Deposit:</strong> £" . number_format($deposit, 2) . "</p>
         <p style='margin-top:20px;'><strong>Payment Options:</strong></p>
         <p>Click the button below to proceed with payment.</p>";
         // Assuming you have a Stripe subscription button shortcode
