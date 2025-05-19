@@ -219,30 +219,6 @@ $quote_table .= "<tr><td><strong>Total</strong></td><td style='text-align:right;
 <tr><td><strong>Deposit Required</strong></td><td style='text-align:right;'><strong>£" . number_format($deposit, 2) . "</strong></td></tr>
 </tbody></table>";
 
-$secret_key = get_option('scf_stripe_secret_key');
-            \Stripe\Stripe::setApiKey($secret_key);
-        $site_name = get_bloginfo('name');
-$checkout_session = \Stripe\Checkout\Session::create([
-    'payment_method_types' => ['card'],
-    'customer_email' => $client_email,
-    'line_items' => [[
-        'price_data' => [
-            'currency' => 'gbp',
-            'product_data' => [
-                'name' => "Deposit for Quote #{$post_id} - {$site_name}",
-                'description' => $client_desc,
-            ],
-            'unit_amount' => intval($deposit * 100),
-        ],
-        'quantity' => 1,
-    ]],
-    'mode' => 'payment',
-    'success_url' => site_url('/return?quote_payment=success&quote_id={' . $quote_id . '}'),
-    'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
-]);
-
-$payment_url = $checkout_session->url;
-update_post_meta($post_id, '_stripe_checkout_url', esc_url($payment_url));
 
 // Replace placeholders
 $body = $template;
@@ -314,7 +290,7 @@ require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
 
     $pdf->SetFont('Arial', 'B', 12);
     $pdf->Cell(120, 8, 'Total', 1);
-    $pdf->Cell(40, 8, '£' . number_format($total, 2), 1, 0, 'R');
+    $pdf->Cell(40, 8, '' . number_format($total, 2), 1, 0, 'R');
     $pdf->Ln(5);
 
       $deposit = ($deposit_type === 'percent')
@@ -323,6 +299,7 @@ require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
 
      $pdf->SetFont('Arial', '', 12);
     $pdf->Ln(5);
+     $pdf->Cell(0, 10, "£ {$deposit}", 0, 1);
     $pdf->Cell(0, 10, "£" . number_format($deposit, 2), 0, 1, 'C');
 
 
@@ -474,7 +451,7 @@ $checkout_session = \Stripe\Checkout\Session::create([
         'quantity' => 1,
     ]],
     'mode' => 'payment',
-    'success_url' => site_url('?quote_payment=success&quote_id={' . $quote_id . '}'),
+    'success_url' => site_url('/thank-you?quote_payment=success&quote_id={' . $quote_id . '}'),
     'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
 ]);
 
@@ -534,16 +511,7 @@ add_action('template_redirect', function () {
             // Send confirmation email
             $client_email = get_post_meta($quote_id, '_client_email', true);
             $client_name  = get_post_meta($quote_id, '_client_name', true);
-              $items = get_post_meta($quote_id, '_quote_items', true) ?: [];
-        $total = 0;
-            foreach ($items as $item) {
-            $total += floatval($item['cost'] ?? 0);
-        }
-        $deposit_value = get_post_meta($quote_id, '_quote_deposit_value', true) ?: 50;
-        $deposit_type = get_post_meta($quote_id, '_quote_deposit_type', true) ?: 'percent';
-        $deposit = ($deposit_type === 'percent')
-            ? $total * (floatval($deposit_value) / 100)
-            : floatval($deposit_value);
+             
 
             $subject = 'Deposit Received - Thank You!';
             $message = "
