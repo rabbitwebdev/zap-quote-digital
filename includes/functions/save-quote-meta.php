@@ -122,7 +122,7 @@ if ($logo) {
 }
 
     $headers = ['Content-Type: text/html; charset=UTF-8'];
-require_once plugin_dir_path(__FILE__) . '../fpdf/fpdf.php';
+require_once plugin_dir_path(__FILE__) . '.../fpdf/fpdf.php';
     // --- FPDF PDF Generation ---
     $pdf = new FPDF();
     $pdf->AddPage();

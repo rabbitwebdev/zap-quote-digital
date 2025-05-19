@@ -25,10 +25,8 @@ if (!defined('ABSPATH')) {
     }
 
      // Calculate deposit
-    $deposit = ($deposit_type === 'percent')
-        ? $total * (floatval($deposit_value) / 100)
-        : floatval($deposit_value);
-    
+    $deposit = ($deposit_type === 'percent') ? $total * (floatval($deposit_value) / 100) : floatval($deposit_value);
+   
 ?>
 
 <p class="quote-p"><label>Status: 
