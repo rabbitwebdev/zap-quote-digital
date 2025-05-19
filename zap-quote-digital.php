@@ -548,6 +548,7 @@ add_shortcode('quote_thank_you', function () {
     $client_email = get_post_meta($quote_id, '_client_email', true);
     $client_phone = get_post_meta($quote_id, '_client_phone', true);
     $client_desc = get_post_meta($quote_id, '_client_desc', true);
+    $client_address = get_post_meta($quote_id, '_client_address', true);
     $status = get_post_meta($quote_id, '_quote_status', true);
     $items = get_post_meta($quote_id, '_quote_items', true) ?: [];
     $deposit = get_post_meta($quote_id, '_quote_deposit_amount', true);
@@ -562,14 +563,15 @@ add_shortcode('quote_thank_you', function () {
     <div class="quote-thank-you" style="padding:20px; border:1px solid #ccc; background:#f9f9f9;">
         <h2>Thank You, <?= esc_html($client_name) ?>!</h2>
         <p>Your quote has been processed.</p>
+        <h3>Project Title: <?= esc_html(get_the_title($quote_id)) ?></h3>
+        <p><strong>Description:</strong> <?= esc_html($client_desc) ?></p>
         <p>Quote ID: <?= esc_html($quote_id) ?></p>
-        <p>Quote Title: <?= esc_html(get_the_title($quote_id)) ?></p>
-        <p>Client Details:</p>
-        <ul>
-            <li><strong>Name:</strong> <?= esc_html($client_name) ?></li>
-            <li><strong>Email:</strong> <?= esc_html($client_email) ?></li>
-            <li><strong>Phone:</strong> <?= esc_html($client_phone) ?></li>
-            <li><strong>Description:</strong> <?= esc_html($client_desc) ?></li>
+        <h4>Client Details:</h4>
+        <div class="client-details">
+            <p><strong>Email:</strong> <?= esc_html($client_email) ?></p>
+            <p><strong>Phone:</strong> <?= esc_html($client_phone) ?></p>
+            <p><strong>Address:</strong> <?= nl2br(esc_html($client_address)) ?></p>
+        </div>
         <ul>
             <li><strong>Status:</strong> <?= ucfirst(esc_html($status)) ?></li>
             <li><strong>Total Quote:</strong> £<?= number_format($total, 2) ?></li>
