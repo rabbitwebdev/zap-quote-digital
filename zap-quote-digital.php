@@ -466,7 +466,7 @@ $checkout_session = \Stripe\Checkout\Session::create([
         'price_data' => [
             'currency' => 'gbp',
             'product_data' => [
-                'name' => "Deposit for Quote #{$post_id} - {$site_name}",
+                'name' => "Deposit for Quote #{$quote_id} - {$site_name}",
                 'description' => $client_desc,
             ],
             'unit_amount' => intval($deposit * 100),
@@ -474,7 +474,7 @@ $checkout_session = \Stripe\Checkout\Session::create([
         'quantity' => 1,
     ]],
     'mode' => 'payment',
-    'success_url' => site_url('?quote_payment=success&quote_id={' . $quote_id . '}'),
+    'success_url' => site_url('/retuen?quote_payment=success&quote_id={' . $quote_id . '}'),
     'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
 ]);
 
@@ -551,10 +551,6 @@ add_action('template_redirect', function () {
                 <h2>Thank you, {$client_name}!</h2>
                 <p>We've received your deposit for Quote #{$quote_id}.</p>
                 <p>Quote Summary:</p>
-                <p><strong>Total Cost:</strong> £" . number_format($total, 2) . "</p>
-                <p><strong>Deposit Paid:</strong> £" . number_format($deposit, 2) . "</p>
-                <p>To view your quote, please click the link below:</p>
-                <p><a href='" . get_permalink($quote_id) . "'>View Quote</a></p>
                 <p>If you have any questions, feel free to reach out.</p>
                 <p>We appreciate your business!</p>
                 <p>Best regards,</p>
