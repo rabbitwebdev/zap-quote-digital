@@ -260,7 +260,7 @@ require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
     $pdf->Ln(5);
     $pdf->Cell(0, 10, "Quote ID: {$post_id}", 0, 1);
     $pdf->Cell(0, 10, "Quote Title: {$project_title}", 0, 1);
-    $pdf->Cell(0, 10, "Date: " . date('Y-m-d'), 0, 1);
+    $pdf->Cell(0, 10, "Date: " . date('d-m-Y'), 0, 1);
     $pdf->Ln(5);
     $pdf->SetFont('Arial', 'B', 12);
     $pdf->Cell(0, 10, "Client Details", 0, 1);
@@ -290,14 +290,14 @@ require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
     }
   
 
-    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->SetFont('Arial', 'B', 14);
     $pdf->Cell(120, 8, 'Total', 1);
     $pdf->Cell(40, 8, '' . number_format($total, 2), 1, 0, 'R');
     $pdf->Ln(5);
 
      $pdf->SetFont('Arial', '', 12);
     $pdf->Ln(5);
-    $pdf->Cell(0, 10, '' . number_format($deposit, 2), 0, 1, 'C');
+    $pdf->Cell(0, 10, 'Deposit to Pay:' . number_format($deposit, 2), 0, 1, 'L');
 
 
 
