@@ -447,7 +447,7 @@ $checkout_session = \Stripe\Checkout\Session::create([
         'quantity' => 1,
     ]],
     'mode' => 'payment',
-    'return_url' => site_url('/return?session_id={CHECKOUT_SESSION_ID}'),
+    'success_url' => site_url('/return?session_id={' . $post_id . '}'),
     'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
 ]);
 
