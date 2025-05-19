@@ -286,8 +286,6 @@ require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
     foreach ($items as $item) {
         $pdf->Cell(120, 8, $item['desc'], 1);
         $pdf->Cell(40, 8, number_format($item['cost'], 2), 1, 0, 'R');
-        $pdf->Ln();
-        $total += $item['cost'];
     }
   
 
@@ -296,14 +294,9 @@ require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
     $pdf->Cell(40, 8, '' . number_format($total, 2), 1, 0, 'R');
     $pdf->Ln(5);
 
-      $deposit = ($deposit_type === 'percent')
-    ? $total * (floatval($deposit_value) / 100)
-    : floatval($deposit_value);
-
      $pdf->SetFont('Arial', '', 12);
     $pdf->Ln(5);
-     $pdf->Cell(0, 10, "£ {$deposit}", 0, 1);
-    $pdf->Cell(0, 10, "£" . number_format($deposit, 2), 0, 1, 'C');
+    $pdf->Cell(0, 10, '' . number_format($deposit, 2), 0, 1, 'C');
 
 
 
