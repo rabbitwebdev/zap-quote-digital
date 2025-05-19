@@ -60,6 +60,7 @@ function quote_details_callback($post) {
         <option value="sent" <?= selected($status, 'sent') ?>>Sent</option>
         <option value="accepted" <?= selected($status, 'accepted') ?>>Accepted</option>
         <option value="rejected" <?= selected($status, 'rejected') ?>>Rejected</option>
+        <option value="deposit_paid" <?= selected($status, 'deposit_paid') ?>>Deposit Paid</option>
     </select>
 </label></p>
     <p><label>Client Name: <input type="text" name="client_name" value="<?= esc_attr($client_name) ?>" /></label></p>
@@ -324,15 +325,6 @@ require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
     $pdf->Ln(5);
     $pdf->Cell(0, 10, "£" . number_format($deposit, 2), 0, 1, 'C');
 
-    $pdf->Ln(10);
-$pdf->SetFont('Arial', 'B', 12);
-$pdf->Cell(0, 10, 'Pay your deposit online:', 0, 1);
-
-$pdf->SetFont('Arial', '', 12);
-$pdf->SetTextColor(0, 0, 255);
-$pdf->SetDrawColor(0, 0, 255);
-$pdf->Write(10, $payment_url);
-$pdf->SetTextColor(0, 0, 0);
 
 
     $pdf->Ln(5);
@@ -482,7 +474,7 @@ $checkout_session = \Stripe\Checkout\Session::create([
         'quantity' => 1,
     ]],
     'mode' => 'payment',
-    'success_url' => site_url('/return?quote_payment=success&quote_id={' . $quote_id . '}'),
+    'success_url' => site_url('?quote_payment=success&quote_id={' . $quote_id . '}'),
     'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
 ]);
 
@@ -542,11 +534,30 @@ add_action('template_redirect', function () {
             // Send confirmation email
             $client_email = get_post_meta($quote_id, '_client_email', true);
             $client_name  = get_post_meta($quote_id, '_client_name', true);
+              $items = get_post_meta($quote_id, '_quote_items', true) ?: [];
+        $total = 0;
+            foreach ($items as $item) {
+            $total += floatval($item['cost'] ?? 0);
+        }
+        $deposit_value = get_post_meta($quote_id, '_quote_deposit_value', true) ?: 50;
+        $deposit_type = get_post_meta($quote_id, '_quote_deposit_type', true) ?: 'percent';
+        $deposit = ($deposit_type === 'percent')
+            ? $total * (floatval($deposit_value) / 100)
+            : floatval($deposit_value);
+
             $subject = 'Deposit Received - Thank You!';
             $message = "
                 <html><body>
                 <h2>Thank you, {$client_name}!</h2>
                 <p>We've received your deposit for Quote #{$quote_id}.</p>
+                <p>Quote Summary:</p>
+                <p><strong>Total Cost:</strong> £" . number_format($total, 2) . "</p>
+                <p><strong>Deposit Paid:</strong> £" . number_format($deposit, 2) . "</p>
+                <p>To view your quote, please click the link below:</p>
+                <p><a href='" . get_permalink($quote_id) . "'>View Quote</a></p>
+                <p>If you have any questions, feel free to reach out.</p>
+                <p>We appreciate your business!</p>
+                <p>Best regards,</p>
                 <p>We'll be in touch soon to move forward.</p>
                 <p><strong>Your Company Name</strong></p>
                 </body></html>
