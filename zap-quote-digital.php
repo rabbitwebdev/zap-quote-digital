@@ -8,7 +8,7 @@ Author: Your Name
 
 if (!defined('ABSPATH')) exit;
 
-require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
+
 
 
 
@@ -185,6 +185,7 @@ add_action('save_post_quote', function ($post_id) {
     $items = get_post_meta($post_id, '_quote_items', true);
     $deposit_type = get_post_meta($post_id, '_quote_deposit_type', true) ?: 'percent';
 $deposit_value = get_post_meta($post_id, '_quote_deposit_value', true) ?: 50;
+$project_title = get_the_title($post_id);
 
 
    $template = get_option('quote_email_template', '');
@@ -224,6 +225,9 @@ $body = str_replace('{{client_name}}', $client_name, $body);
 $body = str_replace('{{quote_table}}', $quote_table, $body);
 $body = str_replace('{{client_desc}}', $client_desc, $body);
 $body = str_replace('{{client_phone}}', $client_phone, $body);
+$body = str_replace('{{client_address}}', nl2br($client_address), $body);
+$body = str_replace('{{quote_id}}', $post_id, $body);
+$body = str_replace('{{quote_title}}', $project_title, $body);
 $terms_link = get_permalink($terms_page_id);
 $body .= "<p><small>By accepting this quote, you agree to our <a href='{$terms_link}'>Terms & Conditions</a>.</small></p>";
 $body .= "<p>
@@ -237,18 +241,35 @@ if ($logo) {
 }
 
     $headers = ['Content-Type: text/html; charset=UTF-8'];
-
+require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
     // --- FPDF PDF Generation ---
     $pdf = new FPDF();
     $pdf->AddPage();
     $pdf->SetFont('Arial', 'B', 16);
+     if ($logo) {
+            $pdf->Image($logo, 10, 10, 50);
+            $pdf->Ln(30);
+        }
     $pdf->Cell(0, 10, 'Building Quote', 0, 1, 'C');
 
     $pdf->SetFont('Arial', '', 12);
     $pdf->Ln(5);
-    $pdf->Cell(0, 10, "Client: {$client_name}", 0, 1);
+    $pdf->Cell(0, 10, "Quote ID: {$post_id}", 0, 1);
+    $pdf->Cell(0, 10, "Quote Title: {$project_title}", 0, 1);
+    $pdf->Cell(0, 10, "Date: " . date('Y-m-d'), 0, 1);
+    $pdf->Ln(5);
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 10, "Client Details", 0, 1);
+    $pdf->SetFont('Arial', '', 12);
+    $pdf->Cell(0, 10, "Name: {$client_name}", 0, 1);
     $pdf->Cell(0, 10, "Email: {$client_email}", 0, 1);
     $pdf->Cell(0, 10, "Phone: {$client_phone}", 0, 1);
+    $pdf->Cell(0, 10, "Address: {$client_address}", 0, 1);
+    $pdf->Ln(5);
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 10, "Quote Details", 0, 1);
+    $pdf->SetFont('Arial', '', 12);
+    $pdf->Ln(5);
     $pdf->Cell(0, 10, "Description: {$client_desc}", 0, 1);
     $pdf->Ln(5);
 
@@ -264,16 +285,26 @@ if ($logo) {
         $pdf->Ln();
         $total += $item['cost'];
     }
-    $deposit = ($deposit_type === 'percent')
-    ? $total * (floatval($deposit_value) / 100)
-    : floatval($deposit_value);
+  
 
     $pdf->SetFont('Arial', 'B', 12);
     $pdf->Cell(120, 8, 'Total', 1);
     $pdf->Cell(40, 8, '£' . number_format($total, 2), 1, 0, 'R');
     $pdf->Ln(5);
-    $pdf->Cell(120, 8, 'Deposit Required', 1);
-    $pdf->Cell(40, 8, '£' . number_format($deposit, 2), 1, 1, 'R');
+
+      $deposit = ($deposit_type === 'percent')
+    ? $total * (floatval($deposit_value) / 100)
+    : floatval($deposit_value);
+
+     $pdf->SetFont('Arial', '', 12);
+    $pdf->Ln(5);
+    $pdf->Cell(0, 10, "£" . number_format($deposit, 2), 0, 1, 'C');
+
+    $pdf->Ln(5);
+    $pdf->SetFont('Arial', 'I', 8);
+    $pdf->SetTextColor(0, 0, 255);
+    $pdf->Write(5, 'View Terms & Conditions', $terms_link);
+    $pdf->SetTextColor(0, 0, 0);
 
     // Save PDF temporarily
     $pdf_path = plugin_dir_path(__FILE__) . "temp-quote-{$post_id}.pdf";
@@ -309,8 +340,8 @@ add_action('admin_init', function () {
     add_settings_section('quote_main_section', 'Email Template Settings', null, 'quote-settings');
 
     add_settings_field('quote_email_template', 'Email Template', function () {
-        echo '<p>You can use the following placeholders: <code>{{client_name}}</code>, <code>{{quote_table}}</code>, <code>{{client_desc}}</code>, <code>{{client_phone}}</code> </p>';
-        $val = get_option('quote_email_template', '<p>Hello {{client_name}},</p><p>Here is your quote:</p>{{quote_table}}<p>Thanks!</p>');
+        echo '<p>You can use the following placeholders: <code>{{client_name}}</code>, <code>{{quote_table}}</code>, <code>{{client_desc}}</code>, <code>{{client_phone}}</code>, <code>{{client_address}}</code> </p>';
+        $val = get_option('quote_email_template', '<p>Hello {{client_name}},</p><p>Project details: {{client_desc}}</p><p>Client details:<br>Phone: {{client_phone}} <br>Address: {{client_address}}<p>Here is your quote:</p>{{quote_table}}<p>Thanks!</p>');
         echo '<textarea name="quote_email_template" rows="10" cols="80" style="width:100%">' . esc_textarea($val) . '</textarea>';
     }, 'quote-settings', 'quote_main_section');
 
@@ -416,7 +447,7 @@ $checkout_session = \Stripe\Checkout\Session::create([
         'quantity' => 1,
     ]],
     'mode' => 'payment',
-    'success_url' => home_url('?quote_payment=success&quote_id=' . $post_id),
+    'return_url' => site_url('/return?session_id={CHECKOUT_SESSION_ID}'),
     'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
 ]);
 
