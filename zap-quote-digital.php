@@ -474,7 +474,7 @@ $checkout_session = \Stripe\Checkout\Session::create([
         'quantity' => 1,
     ]],
     'mode' => 'payment',
-    'success_url' => site_url('/retuen?quote_payment=success&quote_id={' . $quote_id . '}'),
+    'success_url' => site_url('?quote_payment=success&quote_id={' . $quote_id . '}'),
     'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
 ]);
 
