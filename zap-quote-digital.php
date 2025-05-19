@@ -526,7 +526,7 @@ add_action('template_redirect', function () {
             $headers = ['Content-Type: text/html; charset=UTF-8'];
             wp_mail($client_email, $subject, $message, $headers);
 
-            wp_redirect(site_url('/thank-you/'));
+            wp_redirect(site_url('/thank-you?quote_info=boo'));
             exit;
         }
 
