@@ -526,7 +526,7 @@ add_action('template_redirect', function () {
             $headers = ['Content-Type: text/html; charset=UTF-8'];
             wp_mail($client_email, $subject, $message, $headers);
 
-            wp_redirect(site_url('/thank-you?quote_info=boo'));
+            wp_redirect(site_url("/thank-you?quote_id={$quote_id}"));
             exit;
         }
 
@@ -535,4 +535,39 @@ add_action('template_redirect', function () {
             exit;
         }
     }
+});
+
+add_shortcode('quote_thank_you', function () {
+    if (!isset($_GET['quote_id'])) return '<p>Quote not found.</p>';
+
+    $quote_id = intval($_GET['quote_id']);
+
+    if (get_post_type($quote_id) !== 'quote') return '<p>Invalid quote.</p>';
+
+    $client_name = get_post_meta($quote_id, '_client_name', true);
+    $status = get_post_meta($quote_id, '_quote_status', true);
+    $items = get_post_meta($quote_id, '_quote_items', true) ?: [];
+    $deposit = get_post_meta($quote_id, '_quote_deposit_amount', true);
+
+    $total = 0;
+    foreach ($items as $item) {
+        $total += floatval($item['cost']);
+    }
+
+    ob_start();
+    ?>
+    <div class="quote-thank-you" style="padding:20px; border:1px solid #ccc; background:#f9f9f9;">
+        <h2>Thank You, <?= esc_html($client_name) ?>!</h2>
+        <p>Your quote has been processed.</p>
+        <ul>
+            <li><strong>Status:</strong> <?= ucfirst(esc_html($status)) ?></li>
+            <li><strong>Total Quote:</strong> £<?= number_format($total, 2) ?></li>
+            <?php if ($deposit): ?>
+                <li><strong>Deposit Paid:</strong> £<?= number_format(floatval($deposit), 2) ?></li>
+            <?php endif; ?>
+        </ul>
+        <p>If you have any questions, feel free to <a href="<?= esc_url(home_url('/contact')) ?>">contact us</a>.</p>
+    </div>
+    <?php
+    return ob_get_clean();
 });
