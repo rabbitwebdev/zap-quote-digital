@@ -286,6 +286,7 @@ require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
     foreach ($items as $item) {
         $pdf->Cell(120, 8, $item['desc'], 1);
         $pdf->Cell(40, 8, number_format($item['cost'], 2), 1, 0, 'R');
+        $pdf->Ln();
     }
   
 
