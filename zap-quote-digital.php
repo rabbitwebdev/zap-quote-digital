@@ -560,7 +560,7 @@ add_shortcode('quote_thank_you', function () {
 
     ob_start();
     ?>
-    <div class="quote-thank-you" style="padding:20px; border:1px solid #ccc; background:#f9f9f9;">
+    <div class="quote-thank-you">
         <h2>Thank You, <?= esc_html($client_name) ?>!</h2>
         <p>Your quote has been processed.</p>
         <h3>Project Title: <?= esc_html(get_the_title($quote_id)) ?></h3>
