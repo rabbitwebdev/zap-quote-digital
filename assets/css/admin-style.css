@@ -66,8 +66,26 @@ border-radius: 0;
 
 #quote_details.postbox .inside p.quote-total-cost {
     width: 100%;
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 600;
     color: #000;
     margin: 0;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-transform: capitalize;
+}
+
+#quote_details.postbox .inside .quote-result label {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: #000;
+    margin: 0px;
+}
+
+#quote_details.postbox .inside .quote-result label input, select {
+margin: 0 10px;
+    border-radius: 0px;
 }
