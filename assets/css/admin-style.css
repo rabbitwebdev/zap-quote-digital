@@ -1,0 +1,40 @@
+#quote_details.postbox .inside {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+#quote_details.postbox .inside p.quote-p {
+    width: 45%;
+        margin: 0;
+        margin-bottom: 0px;
+        margin-bottom: 10px;
+        color: #000;
+        font-size: 14px;
+        text-transform: capitalize;
+        font-weight: 500;
+        line-height: 1.9;
+}
+
+#quote_details.postbox .inside p.quote-p label {
+border-radius: 0;
+    display: grid;
+}
+
+#quote_details.postbox .inside p.quote-p label input {
+    border-radius: 0;
+}
+
+#quote_details.postbox .inside #quote-items {
+    display: flex;
+    flex-wrap: wrap;
+}
+#quote_details.postbox #quote-items p {
+    width: 100%;
+    justify-content: space-between;
+    display: flex;
+}
+#quote_details.postbox #quote-items p input {
+    width: 47%;
+    border-radius: 0px;
+}

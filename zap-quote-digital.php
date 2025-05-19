@@ -9,7 +9,10 @@ Author: Your Name
 if (!defined('ABSPATH')) exit;
 
 
-
+function zapquote_admin_enqueue_styles() {
+    wp_enqueue_style('zapquote-admin-style', plugin_dir_url(__FILE__) . 'assets/css/admin-style.css');
+}
+add_action('admin_enqueue_scripts', 'zapquote_admin_enqueue_styles');
 
 
 // Register Custom Post Type
@@ -54,7 +57,7 @@ function quote_details_callback($post) {
         : floatval($deposit_value);
     
 ?>
-<p><label>Status: 
+<p class="quote-p"><label>Status: 
     <select name="quote_status">
         <option value="draft" <?= selected($status, 'draft') ?>>Draft</option>
         <option value="sent" <?= selected($status, 'sent') ?>>Sent</option>
@@ -63,12 +66,12 @@ function quote_details_callback($post) {
         <option value="deposit_paid" <?= selected($status, 'deposit_paid') ?>>Deposit Paid</option>
     </select>
 </label></p>
-    <p><label>Client Name: <input type="text" name="client_name" value="<?= esc_attr($client_name) ?>" /></label></p>
-    <p><label>Client Email: <input type="email" name="client_email" value="<?= esc_attr($client_email) ?>" /></label></p>
-    <p><label>Client Phone: <input type="text" name="client_phone" value="<?= esc_attr($client_phone) ?>" /></label></p>
-        <p><label>Client Address: <textarea name="client_address" rows="4" style="width:100%;"><?= esc_textarea($client_address) ?></textarea></label></p>
-    <p><label>Project Description: <textarea name="client_desc" rows="4" style="width:100%;"><?= esc_textarea($client_desc) ?></textarea></label></p>
-    <p><strong>Quote Items:</strong></p>
+    <p class="quote-p"><label>Client Name: <input type="text" name="client_name" value="<?= esc_attr($client_name) ?>" /></label></p>
+    <p class="quote-p"><label>Client Email: <input type="email" name="client_email" value="<?= esc_attr($client_email) ?>" /></label></p>
+    <p class="quote-p"><label>Client Phone: <input type="text" name="client_phone" value="<?= esc_attr($client_phone) ?>" /></label></p>
+        <p class="quote-p"><label>Client Address: <textarea name="client_address" rows="4" style="width:100%;"><?= esc_textarea($client_address) ?></textarea></label></p>
+    <p class="quote-p"><label>Project Description: <textarea name="client_desc" rows="4" style="width:100%;"><?= esc_textarea($client_desc) ?></textarea></label></p>
+    <p class="quote-item-title"><strong>Quote Items:</strong></p>
     <div id="quote-items">
         <?php foreach ($items as $i => $item): ?>
             <p>
