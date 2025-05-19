@@ -218,6 +218,30 @@ $quote_table .= "<tr><td><strong>Total</strong></td><td style='text-align:right;
 <tr><td><strong>Deposit Required</strong></td><td style='text-align:right;'><strong>£" . number_format($deposit, 2) . "</strong></td></tr>
 </tbody></table>";
 
+$secret_key = get_option('scf_stripe_secret_key');
+            \Stripe\Stripe::setApiKey($secret_key);
+        $site_name = get_bloginfo('name');
+$checkout_session = \Stripe\Checkout\Session::create([
+    'payment_method_types' => ['card'],
+    'customer_email' => $client_email,
+    'line_items' => [[
+        'price_data' => [
+            'currency' => 'gbp',
+            'product_data' => [
+                'name' => "Deposit for Quote #{$post_id} - {$site_name}",
+                'description' => $client_desc,
+            ],
+            'unit_amount' => intval($deposit * 100),
+        ],
+        'quantity' => 1,
+    ]],
+    'mode' => 'payment',
+    'success_url' => site_url('/return?quote_payment=success&quote_id={' . $quote_id . '}'),
+    'cancel_url' => site_url('?quote_payment=cancel&quote_id=' . $post_id),
+]);
+
+$payment_url = $checkout_session->url;
+update_post_meta($post_id, '_stripe_checkout_url', esc_url($payment_url));
 
 // Replace placeholders
 $body = $template;
@@ -299,6 +323,17 @@ require_once plugin_dir_path(__FILE__) . 'fpdf/fpdf.php';
      $pdf->SetFont('Arial', '', 12);
     $pdf->Ln(5);
     $pdf->Cell(0, 10, "£" . number_format($deposit, 2), 0, 1, 'C');
+
+    $pdf->Ln(10);
+$pdf->SetFont('Arial', 'B', 12);
+$pdf->Cell(0, 10, 'Pay your deposit online:', 0, 1);
+
+$pdf->SetFont('Arial', '', 12);
+$pdf->SetTextColor(0, 0, 255);
+$pdf->SetDrawColor(0, 0, 255);
+$pdf->Write(10, $payment_url);
+$pdf->SetTextColor(0, 0, 0);
+
 
     $pdf->Ln(5);
     $pdf->SetFont('Arial', 'I', 8);
