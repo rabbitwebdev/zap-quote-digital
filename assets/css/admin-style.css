@@ -16,6 +16,12 @@
         line-height: 1.9;
 }
 
+#quote_details.postbox .inside p.quote-item-title {
+    width: 100%;
+    font-size: 14px;
+    color: #000;
+}
+
 #quote_details.postbox .inside p.quote-p label {
 border-radius: 0;
     display: grid;
@@ -33,8 +39,35 @@ border-radius: 0;
     width: 100%;
     justify-content: space-between;
     display: flex;
+    margin: 8px 0;
 }
 #quote_details.postbox #quote-items p input {
-    width: 47%;
+    width: 49%;
     border-radius: 0px;
+}
+
+#quote_details.postbox #quote-items .add-btn-item {
+border-radius: 0;
+    box-shadow: none;
+    font-size: 14px;
+    padding: 6px 18px;
+    box-sizing: unset;
+    border: 1px solid #000;
+    background-color: blue;
+    color: #fff;
+    font-weight: 300;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+#quote_details.postbox .inside .quote-result {
+    width: 100%;
+}
+
+#quote_details.postbox .inside p.quote-total-cost {
+    width: 100%;
+    font-size: 16px;
+    font-weight: 600;
+    color: #000;
+    margin: 0;
 }

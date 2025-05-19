@@ -79,14 +79,14 @@ function quote_details_callback($post) {
                 <input type="number" name="quote_items[<?= $i ?>][cost]" step="0.01" value="<?= esc_attr($item['cost']) ?>" /> 
             </p>
         <?php endforeach; ?>
-        <p><button type="button" onclick="addQuoteItem()">Add Item</button></p>
+        <p><button class="btn add-btn-item" type="button" onclick="addQuoteItem()">Add Item</button></p>
     </div>
-    <label>Quote Total: 
+    <label class="quote-result">Quote Total: 
         <input type="text" name="quote_total" value="£<?= number_format($total, 2) ?>" onchange="updateTotalDisplay()" readonly />
     </label>
-     <p><strong>Total Cost: £<?= number_format($total, 2) ?></strong></p>
+     <p class="quote-total-cost"><strong>Total Cost: £<?= number_format($total, 2) ?></strong></p>
      <h4>Deposit</h4>
-    <p>
+    <p class="quote-result">
         <label>Type: 
             <select name="quote_deposit_type" id="quote_deposit_type" onchange="updateDepositDisplay()">
                 <option value="percent" <?= selected($deposit_type, 'percent') ?>>Percentage (%)</option>
@@ -94,12 +94,12 @@ function quote_details_callback($post) {
             </select>
         </label>
     </p>
-    <p>
+    <p class="quote-result">
         <label>Value: 
             <input type="number" name="quote_deposit_value" id="quote_deposit_value" value="<?= esc_attr($deposit_value) ?>" step="0.01" onchange="updateDepositDisplay()" />
         </label>
     </p>
-    <p><strong>Calculated Deposit: £<span id="deposit-calculated"><?= number_format($deposit, 2) ?></span></strong></p>
+    <p class="quote-result"><strong>Calculated Deposit: £<span id="deposit-calculated"><?= number_format($deposit, 2) ?></span></strong></p>
     <p><button type="submit" name="send_quote" class="button button-primary">Send Quote</button></p>
 
     <script>
